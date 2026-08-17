@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>CareAnywhere 🌙</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, sans-serif; }
+    body { background: #f0f4f0; display: flex; justify-content: center; padding: 1rem; }
+    .phone { width: 360px; background: #fff; border-radius: 32px; border: 1px solid #ddd; overflow: hidden; box-shadow: 0 8px 32px rgba(0,0,0,0.12); }
+    .app-header { background: #2D7D5A; padding: 14px 16px; display: flex; align-items: center; gap: 10px; }
+    .app-title { color: #fff; font-size: 16px; font-weight: 600; }
+    .app-sub { color: rgba(255,255,255,0.8); font-size: 11px; }
+    .mode-bar { background: #245f44; padding: 6px 12px; display: flex; align-items: center; justify-content: space-between; }
+    .mode-label { color: rgba(255,255,255,0.8); font-size: 11px; }
+    .toggle-wrap { display: flex; background: rgba(0,0,0,0.2); border-radius: 20px; padding: 2px; gap: 2px; }
+    .toggle-btn { border: none; background: transparent; color: rgba(255,255,255,0.6); font-size: 11px; padding: 3px 10px; border-radius: 16px; cursor: pointer; }
+    .toggle-btn.active { background: #fff; color: #2D7D5A; font-weight: 600; }
+    .chat-area { padding: 12px; min-height: 400px; max-height: 400px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; background: #f9fafb; }
+    .bubble { max-width: 82%; padding: 10px 13px; border-radius: 16px; font-size: 13px; line-height: 1.6; word-wrap: break-word; }
+    .bubble.app { background: #2D7D5A; color: #fff; border-bottom-left-radius: 4px; align-self: flex-start; }
+    .bubble.user { background: #e8e8e8; color: #222; border-bottom-right-radius: 4px; align-self: flex-end; }
+    .bubble.typing { background: #2D7D5A; color: #fff; border-bottom-left-radius: 4px; align-self: flex-start; padding: 12px 16px; }
+    .dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,0.7); margin: 0 2px; animation: bounce 1.2s infinite; }
+    .dot:nth-child(2) { animation-delay: 0.2s; }
+    .dot:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes bounce { 0%,60%,100%{transform:translateY(0)} 30%{transform:translateY(-5px)} }
+    .disclaimer { font-size: 10px; color: #888; text-align: center; padding: 4px 12px 8px; background: #f9fafb; }
+    .input-row { padding: 10px 12px; border-top: 1px solid #eee; display: flex; gap: 8px; align-items: center; background: #fff; }
+    .msg-input { flex: 1; border: 1px solid #ddd; border-radius: 20px; padding: 8px 12px; font-size: 13px; outline: none; }
+    .send-btn { background: #2D7D5A; border: none; border-radius: 50%; width: 32px; height: 32px; cursor: pointer; color: #fff; font-size: 15px; flex-shrink: 0; }
+    .send-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .logo { width: 28px; height: 28px; background: rgba(255,255,255,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; }
+  </style>
+</head>
+<body>
+<div class="phone">
+  <div class="app-header">
+    <div class="logo">🤝</div>
+    <div>
+      <div class="app-title">CareAnywhere</div>
+      <div class="app-sub">Always here for you 🌙</div>
+    </div>
+  </div>
+  <div class="mode-bar">
+    <span class="mode-label">Answer length</span>
+    <div class="toggle-wrap">
+      <button class="toggle-btn active" id="btn-short" onclick="setMode('short')">Short</button>
+      <button class="toggle-btn" id="btn-long" onclick="setMode('long')">Long</button>
+    </div>
+  </div>
+  <div class="chat-area" id="chat"></div>
+  <div class="disclaimer">Not a substitute for emergency care. Call 911 for life-threatening situations.</div>
+  <div class="input-row">
+    <input class="msg-input" id="msgInput" placeholder="Tell me what's going on..." onkeydown="if(event.key==='Enter'){sendMsg()}" />
+    <button class="send-btn" id="sendBtn" onclick="sendMsg()">➤</button>
+  </div>
+</div>
+
+<script>
+let mode = 'short';
+let history = [];
+let responding = false;
+
+function setMode(m) {
+  mode = m;
+  document.getElementById('btn-short').className = 'toggle-btn' + (m==='short'?' active':'');
+  document.getElementById('btn-long').className = 'toggle-btn' + (m==='long'?' active':'');
+}
+
+function getPrompt() {
+  const len = mode==='short'
+    ? 'Keep EVERY response to 1-2 short sentences. One question at a time.'
+    : 'Give 3-5 sentence responses. One question at a time.';
+  return `You are CareAnywhere, a warm AI health navigator for rural and underserved communities worldwide.\n\nPERSONALITY: Warm, caring, plain language, natural and varied — never robotic.\n\nBANNED PHRASES — NEVER SAY THESE:\n- "we are here for you"\n- "we've got your back"\n- "you came to the right place"\n- "don't worry"\n- "we understand"\n- Any similar reassurance phrase\n\nVARIETY: Never start two responses the same way. Always vary your language.\n\nLENGTH: ${len}\n\nROLE: Help users understand symptoms, guide them to right care level, find nearby resources.\n\nSAFETY RULES:\n- NEVER diagnose\n- Send to 911/ER for: chest pain, difficulty breathing, severe bleeding, stroke, high fever in babies under 3 months\n- NEVER give specific medication doses\n- You are a navigator not a doctor\n\nGLOBAL AWARENESS: You serve rural America AND places like Afghanistan where medication access is extremely limited.`;
+}
+
+function addBubble(text, type) {
+  const chat = document.getElementById('chat');
+  const b = document.createElement('div');
+  b.className = `bubble ${type}`;
+  b.textContent = text;
+  chat.appendChild(b);
+  chat.scrollTop = chat.scrollHeight;
+}
+
+function showTyping() {
+  removeTyping();
+  const chat = document.getElementById('chat');
+  const t = document.createElement('div');
+  t.className = 'bubble typing'; t.id = 'typ';
+  t.innerHTML = '<span class="dot"></span><span class="dot"></span><span class="dot"></span>';
+  chat.appendChild(t);
+  chat.scrollTop = chat.scrollHeight;
+}
+
+function removeTyping() { const t = document.getElementById('typ'); if(t) t.remove(); }
+
+async function callAI(msg) {
+  history.push({role:'user', content:msg});
+  const r = await fetch('/api/chat', {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({messages: history, system: getPrompt()})
+  });
+  if(!r.ok) throw new Error(r.status);
+  const d = await r.json();
+  const reply = d.content.filter(b=>b.type==='text').map(b=>b.text).join('');
+  history.push({role:'assistant', content:reply});
+  return reply;
+}
+
+async function sendMsg() {
+  if(responding) return;
+  const input = document.getElementById('msgInput');
+  const text = input.value.trim();
+  if(!text) return;
+  input.value = '';
+  responding = true;
+  document.getElementById('sendBtn').disabled = true;
+  addBubble(text, 'user');
+  showTyping();
+  try {
+    const reply = await callAI(text);
+    removeTyping();
+    addBubble(reply, 'app');
+  } catch(e) {
+    removeTyping();
+    addBubble("Having trouble connecting. Please try again.", 'app');
+  }
+  responding = false;
+  document.getElementById('sendBtn').disabled = false;
+  input.focus();
+}
+
+async function init() {
+  showTyping();
+  await new Promise(r=>setTimeout(r,900));
+  removeTyping();
+  const opening = "Hi, what's going on today? 😊 You came to the right place!";
+  addBubble(opening, 'app');
+  history.push({role:'assistant', content:opening});
+  document.getElementById('msgInput').focus();
+}
+
+init();
+</script>
+</body>
+</html>
