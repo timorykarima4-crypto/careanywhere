@@ -1,0 +1,11 @@
+{
+  "name": "careanywhere",
+  "version": "1.0.0",
+  "main": "api/chat.js",
+  "scripts": {
+    "start": "node api/chat.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2"
+  }
+}
