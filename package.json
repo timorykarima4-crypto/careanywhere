@@ -1,9 +1,12 @@
 {
   "name": "careanywhere",
   "version": "1.0.0",
-  "main": "api/chat.js",
+  "main": "server.js",
   "scripts": {
-    "start": "node api/chat.js"
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
   },
   "dependencies": {
     "express": "^4.18.2"
